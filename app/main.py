@@ -1,4 +1,5 @@
 from typing import Annotated, Literal
+from pathlib import Path
 
 from fastapi import FastAPI, File, UploadFile, Form, HTTPException
 
@@ -6,6 +7,20 @@ import filetype
 
 from PIL import Image
 import io
+import torch
+
+from utils import class_names
+from model.response_model import InferenceResponse
+from ml import load_convnext, load_maxvit, grad_cam_convnext, grad_cam_maxvit, inference_grad_cam
+
+BASE_DIR = Path(__file__).resolve().parent
+CONVNEXT_WEIGHTS_PATH = BASE_DIR.parent / "model_weights" / "convnext_weights.pth"
+MAXVIT_WEIGHTS_PATH = BASE_DIR.parent / "model_weights" / "maxvit_weights.pth"
+
+DEVICE = "cuda" if torch.cuda.is_available() else "cpu"
+
+cam_convnext = grad_cam_convnext(load_convnext(weight_path=CONVNEXT_WEIGHTS_PATH, num_classes=4, device=DEVICE))
+cam_maxvit = grad_cam_maxvit(load_maxvit(weight_path=MAXVIT_WEIGHTS_PATH, num_classes=5, device=DEVICE))
 
 app = FastAPI()
 
@@ -27,14 +42,11 @@ async def predict(model: Annotated[Literal['convnext', 'maxvit'], Form(descripti
     if img.mode != "RGB":
         img = img.convert("RGB")
 
-    width, height = img.size
+    result = inference_grad_cam(cam_convnext if model == 'convnext' else cam_maxvit, img, DEVICE)
 
-    return {
-        "status": "success",
-        "model": 'ConvNeXt' if model == 'convnext' else 'MaxViT',
-        "width": width,
-        "height": height,
-        "format": img.format,
-        "type": image.content_type,
-        "file type": file_type,
-    }
+    return InferenceResponse(
+        original_image=result.original_image,
+        grad_cam_image=result.grad_cam_image,
+        scores=result.scores,
+        class_names=class_names,
+    )
