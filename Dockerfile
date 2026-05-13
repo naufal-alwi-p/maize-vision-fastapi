@@ -7,6 +7,11 @@ WORKDIR /code
 
 COPY ./requirements.txt /code/requirements.txt
 
+# Source - https://stackoverflow.com/a/63377623
+# Posted by Tushar Kolhe, modified by community. See post 'Timeline' for change history
+# Retrieved 2026-05-13, License - CC BY-SA 4.0
+RUN apt-get update && apt-get install ffmpeg libsm6 libxext6  -y
+
 RUN pip install --no-cache-dir -r /code/requirements.txt
 
 COPY ./download_model_weights.py /code/download_model_weights.py
