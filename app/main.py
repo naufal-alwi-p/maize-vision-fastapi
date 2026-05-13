@@ -19,7 +19,7 @@ MAXVIT_WEIGHTS_PATH = BASE_DIR.parent / "model_weights" / "maxvit_weights.pth"
 
 DEVICE = "cuda" if torch.cuda.is_available() else "cpu"
 
-cam_convnext = grad_cam_convnext(load_convnext(weight_path=CONVNEXT_WEIGHTS_PATH, num_classes=4, device=DEVICE))
+cam_convnext = grad_cam_convnext(load_convnext(weight_path=CONVNEXT_WEIGHTS_PATH, num_classes=5, device=DEVICE))
 cam_maxvit = grad_cam_maxvit(load_maxvit(weight_path=MAXVIT_WEIGHTS_PATH, num_classes=5, device=DEVICE))
 
 app = FastAPI()
