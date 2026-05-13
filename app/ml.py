@@ -141,5 +141,5 @@ def inference_grad_cam(grad_cam: GradCAM, image: Image.Image, device: str="cpu")
     return InferenceResult(
         original_image=encode_img_base64(tensor_to_pil(display_image)),
         grad_cam_image=encode_img_base64(tensor_to_pil(cam_image)),
-        scores=np.round(y_pred_softmax.squeeze().cpu().detach().numpy() * 100, 4).tolist(),
+        scores=(y_pred_softmax.squeeze().cpu().detach().numpy() * 100).tolist(),
     )

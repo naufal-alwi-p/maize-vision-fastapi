@@ -2,6 +2,7 @@ from typing import Annotated, Literal
 from pathlib import Path
 
 from fastapi import FastAPI, File, UploadFile, Form, HTTPException
+from fastapi.middleware.cors import CORSMiddleware
 
 import filetype
 
@@ -23,6 +24,19 @@ cam_convnext = grad_cam_convnext(load_convnext(weight_path=CONVNEXT_WEIGHTS_PATH
 cam_maxvit = grad_cam_maxvit(load_maxvit(weight_path=MAXVIT_WEIGHTS_PATH, num_classes=5, device=DEVICE))
 
 app = FastAPI()
+
+origins = [
+    "http://localhost:5173",
+    "http://127.0.0.1:5173",
+]
+
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=origins,
+    allow_credentials=True,
+    allow_methods=["POST"],
+    allow_headers=["*"],
+)
 
 @app.get("/")
 async def welcome():
