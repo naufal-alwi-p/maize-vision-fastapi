@@ -1,3 +1,13 @@
+---
+title: Maize Vision Server
+emoji: 🚀
+colorFrom: purple
+colorTo: indigo
+sdk: docker
+pinned: false
+license: mit
+---
+
 # Maize Vision
 
 Maize Vision adalah server FastAPI untuk klasifikasi penyakit daun jagung berbasis deep learning. Proyek ini memakai dua arsitektur unggulan, ConvNeXt dan MaxViT, untuk memberikan prediksi kelas penyakit dan visualisasi fokus model melalui Grad-CAM. Hasilnya: prediksi yang informatif dan mudah dipahami untuk kebutuhan riset maupun demo aplikasi.
