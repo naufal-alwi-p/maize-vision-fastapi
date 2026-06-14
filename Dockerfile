@@ -20,4 +20,4 @@ RUN python /code/download_model_weights.py --convnext-file-id $CONVNEXT_FILE_ID 
 
 COPY ./app /code/app
 
-CMD ["fastapi", "run", "app/main.py", "--port", "8080"]
+CMD ["fastapi", "run", "app/main.py", "--port", "7860"]
