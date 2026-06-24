@@ -43,7 +43,7 @@ async def welcome():
     return "Hello User!"
 
 @app.post('/predict')
-async def predict(model: Annotated[Literal['convnext', 'maxvit'], Form(description="Opsi model deep learning yang digunakan 'convnext' & 'maxvit'")], image: Annotated[UploadFile, File(description="Hanya menerima satu file foto. Jika mengirim lebih dari 1 file maka file terakhir yang akan diambil")]):
+async def predict(image: Annotated[UploadFile, File(description="Hanya menerima satu file foto. Jika mengirim lebih dari 1 file maka file terakhir yang akan diambil")], model: Annotated[Literal['convnext', 'maxvit'] | None, Form(description="Opsional, pilih model deep learning yang digunakan 'convnext' (default) & 'maxvit'")] = None):
     image_bytes = await image.read()
 
     file_type = filetype.guess_mime(image_bytes)
@@ -56,7 +56,7 @@ async def predict(model: Annotated[Literal['convnext', 'maxvit'], Form(descripti
     if img.mode != "RGB":
         img = img.convert("RGB")
 
-    result = inference_grad_cam(cam_convnext if model == 'convnext' else cam_maxvit, img, DEVICE)
+    result = inference_grad_cam(cam_maxvit if model == 'maxvit' else cam_convnext, img, DEVICE)
 
     return InferenceResponse(
         original_image=result.original_image,

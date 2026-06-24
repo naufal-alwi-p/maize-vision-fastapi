@@ -3,7 +3,7 @@ import io
 from PIL import Image
 import base64
 
-class_names = ['Blight', 'Common_Rust', 'Gray_Leaf_Spot', 'Healthy', 'Pest_Damage']
+class_names = ['Hawar Daun', 'Karat Daun', 'Bercak Daun', 'Sehat', 'Kerusakan Hama']
 
 tensor_to_pil = transforms.ToPILImage(mode='RGB')
 
