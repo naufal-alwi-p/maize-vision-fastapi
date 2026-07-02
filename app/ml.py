@@ -13,6 +13,11 @@ from PIL import Image
 from model.ml_output import InferenceResult
 from utils import tensor_to_pil, encode_img_base64
 
+convnext_features = {}
+
+def convnext_hook_fn(module, input, output):
+    convnext_features["avgpool"] = output.flatten(1).detach()
+
 convnext_transform = transforms.Compose([
     transforms.Resize(224),
     transforms.CenterCrop(224),
@@ -58,6 +63,8 @@ def load_convnext(weight_path: FileLike, num_classes: int, device: str="cpu"):
     new_layer = new_layer.to(device)
 
     model.classifier = new_layer
+
+    model.avgpool.register_forward_hook(convnext_hook_fn)
 
     model.load_state_dict(torch.load(weight_path, weights_only=True, map_location=torch.device(device)))
 
@@ -110,7 +117,7 @@ def grad_cam_maxvit(model: nn.Module):
 
     return GradCAM(model=model, target_layers=target_layers)
 
-def inference_grad_cam(grad_cam: GradCAM, image: Image.Image, device: str="cpu"):
+def inference_grad_cam(grad_cam: GradCAM, binary_model, image: Image.Image, device: str="cpu"):
     image_transform = None
     display_image = None
 
@@ -132,6 +139,8 @@ def inference_grad_cam(grad_cam: GradCAM, image: Image.Image, device: str="cpu")
 
     grayscale_cam = grad_cam(image_transform.to(device))
 
+    prediction = binary_model.predict_proba(convnext_features["avgpool"].cpu().numpy())
+
     y_pred_logits = grad_cam.outputs
 
     y_pred_softmax = torch.softmax(y_pred_logits, dim=1)
@@ -142,4 +151,5 @@ def inference_grad_cam(grad_cam: GradCAM, image: Image.Image, device: str="cpu")
         original_image=encode_img_base64(tensor_to_pil(display_image)),
         grad_cam_image=encode_img_base64(tensor_to_pil(cam_image)),
         scores=(y_pred_softmax.squeeze().cpu().detach().numpy() * 100).tolist(),
+        binary_scores=(np.squeeze(prediction) * 100).tolist(),
     )

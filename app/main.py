@@ -9,19 +9,23 @@ import filetype
 from PIL import Image
 import io
 import torch
+import joblib
 
-from utils import class_names
+from utils import class_names, binary_class_names
 from model.response_model import InferenceResponse
 from ml import load_convnext, load_maxvit, grad_cam_convnext, grad_cam_maxvit, inference_grad_cam
 
 BASE_DIR = Path(__file__).resolve().parent
 CONVNEXT_WEIGHTS_PATH = BASE_DIR.parent / "model_weights" / "convnext_weights.pth"
-MAXVIT_WEIGHTS_PATH = BASE_DIR.parent / "model_weights" / "maxvit_weights.pth"
+# MAXVIT_WEIGHTS_PATH = BASE_DIR.parent / "model_weights" / "maxvit_weights.pth"
+BINARY_MODEL_PATH = BASE_DIR.parent / "model_weights" / "binary.joblib"
 
 DEVICE = "cuda" if torch.cuda.is_available() else "cpu"
 
 cam_convnext = grad_cam_convnext(load_convnext(weight_path=CONVNEXT_WEIGHTS_PATH, num_classes=5, device=DEVICE))
-cam_maxvit = grad_cam_maxvit(load_maxvit(weight_path=MAXVIT_WEIGHTS_PATH, num_classes=5, device=DEVICE))
+# cam_maxvit = grad_cam_maxvit(load_maxvit(weight_path=MAXVIT_WEIGHTS_PATH, num_classes=5, device=DEVICE))
+binary_model = joblib.load(BINARY_MODEL_PATH)
+print(binary_model)
 
 app = FastAPI()
 
@@ -43,7 +47,10 @@ async def welcome():
     return "Hello User!"
 
 @app.post('/predict')
-async def predict(image: Annotated[UploadFile, File(description="Hanya menerima satu file foto. Jika mengirim lebih dari 1 file maka file terakhir yang akan diambil")], model: Annotated[Literal['convnext', 'maxvit'] | None, Form(description="Opsional, pilih model deep learning yang digunakan 'convnext' (default) & 'maxvit'")] = None):
+async def predict(
+    image: Annotated[UploadFile, File(description="Hanya menerima satu file foto. Jika mengirim lebih dari 1 file maka file terakhir yang akan diambil")],
+    # model: Annotated[Literal['convnext', 'maxvit'] | None, Form(description="Opsional, pilih model deep learning yang digunakan 'convnext' (default) & 'maxvit'")] = None,
+):
     image_bytes = await image.read()
 
     file_type = filetype.guess_mime(image_bytes)
@@ -56,11 +63,13 @@ async def predict(image: Annotated[UploadFile, File(description="Hanya menerima 
     if img.mode != "RGB":
         img = img.convert("RGB")
 
-    result = inference_grad_cam(cam_maxvit if model == 'maxvit' else cam_convnext, img, DEVICE)
+    result = inference_grad_cam(cam_convnext, binary_model, img, DEVICE)
 
     return InferenceResponse(
         original_image=result.original_image,
         grad_cam_image=result.grad_cam_image,
         scores=result.scores,
         class_names=class_names,
+        binary_scores=result.binary_scores,
+        binary_class_names=binary_class_names,
     )
