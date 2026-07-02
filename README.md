@@ -10,38 +10,67 @@ license: mit
 
 # Maize Vision
 
-Maize Vision adalah server FastAPI untuk klasifikasi penyakit daun jagung berbasis deep learning. Proyek ini memakai dua arsitektur unggulan, ConvNeXt dan MaxViT, untuk memberikan prediksi kelas penyakit dan visualisasi fokus model melalui Grad-CAM. Hasilnya: prediksi yang informatif dan mudah dipahami untuk kebutuhan riset maupun demo aplikasi.
+Maize Vision adalah server FastAPI untuk inferensi citra daun jagung berbasis ConvNeXt dan model binary scikit-learn. Sistem menghasilkan prediksi multi-kelas penyakit, visualisasi fokus model melalui Grad-CAM, serta prediksi binary untuk mendeteksi apakah gambar termasuk daun jagung atau bukan.
 
 ## Nilai Utama
 
-- Dual-architecture: pilih ConvNeXt atau MaxViT sesuai kebutuhan performa.
+- Satu alur inferensi: ConvNeXt untuk klasifikasi penyakit multi-kelas.
 - Prediksi + visualisasi: keluaran mencakup skor kelas dan citra Grad-CAM.
+- Verifikasi binary tambahan: model scikit-learn memprediksi `Bukan Daun Jagung` vs `Daun Jagung`.
 - API sederhana: cukup kirim satu gambar lewat endpoint tunggal.
 - Siap GPU/CPU: otomatis memakai CUDA bila tersedia.
 
 ## Arsitektur Model
 
-- ConvNeXt (Tiny): modernisasi CNN klasik untuk akurasi kuat dan efisiensi tinggi.
-- MaxViT (Tiny): kombinasi convolution dan windowed attention untuk pemahaman konteks yang kaya.
+- ConvNeXt (Tiny): model utama untuk klasifikasi 5 kelas penyakit daun jagung.
+- Binary classifier (scikit-learn): model `SVC` terkalibrasi probabilitas yang berjalan di atas fitur ConvNeXt (`avgpool`).
 
-Keduanya diakses lewat satu endpoint sehingga Anda bisa membandingkan hasil secara cepat.
+MaxViT tidak digunakan pada alur inferensi aktif.
+
+Pipeline binary classifier:
+
+```python
+from sklearn.calibration import CalibratedClassifierCV
+from sklearn.pipeline import Pipeline
+from sklearn.preprocessing import StandardScaler
+from sklearn.svm import SVC
+
+pipeline = Pipeline([
+	("scaler", StandardScaler()),
+	(
+		"svm",
+		CalibratedClassifierCV(
+			estimator=SVC(),
+			method="sigmoid",
+			ensemble=False,
+			cv=5,
+		),
+	),
+])
+```
 
 ## Alur Prediksi
 
 1. Unggah gambar daun jagung.
 2. Server melakukan preprocessing dan inferensi.
-3. Grad-CAM dihasilkan sebagai overlay fokus model.
-4. Respons mengembalikan skor kelas dan citra hasil.
+3. Fitur `avgpool` ConvNeXt dipakai untuk inferensi binary classifier.
+4. Grad-CAM dihasilkan sebagai overlay fokus model.
+5. Respons mengembalikan skor multi-kelas, skor binary, dan citra hasil.
 
 ## Label Kelas
 
 Model mengembalikan prediksi untuk label berikut:
 
-- Blight
-- Common_Rust
-- Gray_Leaf_Spot
-- Healthy
-- Pest_Damage
+- Hawar Daun
+- Karat Daun
+- Bercak Daun
+- Sehat
+- Kerusakan Hama
+
+Label binary tambahan:
+
+- Bukan Daun Jagung
+- Daun Jagung
 
 ## Endpoint API
 
@@ -53,7 +82,6 @@ Mengembalikan pesan sederhana untuk memastikan server aktif.
 
 Form data:
 
-- `model`: `convnext` atau `maxvit`
 - `image`: file gambar (jpg, jpeg, png, webp)
 
 Respons JSON:
@@ -62,6 +90,8 @@ Respons JSON:
 - `grad_cam_image`: citra Grad-CAM (base64 data URL)
 - `scores`: daftar skor dalam persen
 - `class_names`: daftar label kelas
+- `binary_scores`: daftar skor binary dalam persen
+- `binary_class_names`: daftar label binary
 
 ## Cara Menjalankan
 
@@ -74,7 +104,7 @@ Langkah cepat (Windows PowerShell):
 
 ```bash
 python -m venv .venv
-\.venv\Scripts\Activate.ps1
+.\.venv\Scripts\Activate.ps1
 pip install -r requirements.txt
 fastapi run --workers 2 ./app/main.py
 ```
@@ -85,13 +115,11 @@ Server akan aktif di http://127.0.0.1:8000.
 
 ```bash
 curl -X POST "http://127.0.0.1:8000/predict" ^
-	-F "model=convnext" ^
 	-F "image=@path\to\image.jpg"
 ```
-
-Ganti `model=convnext` dengan `model=maxvit` untuk mencoba arsitektur lain.
 
 ## Catatan
 
 - Model weight disimpan di folder `model_weights` dan dimuat saat server start.
+- File model yang digunakan saat ini: `convnext_weights.pth` dan `binary.joblib`.
 - Gunakan gambar RGB untuk hasil terbaik (server akan mengonversi jika perlu).
