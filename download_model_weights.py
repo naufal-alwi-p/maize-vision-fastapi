@@ -15,7 +15,7 @@ args = parser.parse_args()
 BASE_DIR = Path(__file__).resolve().parent
 CONVNEXT_WEIGHTS = BASE_DIR / "model_weights" / "convnext_weights.pth"
 # MAXVIT_WEIGHTS = BASE_DIR / "model_weights" / "maxvit_weights.pth"
-BINARY_MODEL_PATH = BASE_DIR.parent / "model_weights" / "binary.joblib"
+BINARY_MODEL_PATH = BASE_DIR / "model_weights" / "binary.joblib"
 
 try:
     os.makedirs(BASE_DIR / "model_weights", exist_ok=True)
