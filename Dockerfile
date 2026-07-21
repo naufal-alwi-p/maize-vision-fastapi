@@ -1,7 +1,7 @@
 FROM python:3.13.12
 
 ARG CONVNEXT_FILE_ID
-ARG MAXVIT_FILE_ID
+ARG BINARY_FILE_ID
 
 WORKDIR /code
 
@@ -16,7 +16,7 @@ RUN pip install --no-cache-dir -r /code/requirements.txt
 
 COPY ./download_model_weights.py /code/download_model_weights.py
 
-RUN python /code/download_model_weights.py --convnext-file-id $CONVNEXT_FILE_ID --maxvit-file-id $MAXVIT_FILE_ID
+RUN python /code/download_model_weights.py --convnext-file-id $CONVNEXT_FILE_ID --binary-file-id $BINARY_FILE_ID
 
 COPY ./app /code/app
 

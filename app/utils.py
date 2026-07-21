@@ -5,6 +5,8 @@ import base64
 
 class_names = ['Hawar Daun', 'Karat Daun', 'Bercak Daun', 'Sehat', 'Kerusakan Hama']
 
+binary_class_names = ['Bukan Daun Jagung', "Daun Jagung"]
+
 tensor_to_pil = transforms.ToPILImage(mode='RGB')
 
 def encode_img_base64(img: Image):
